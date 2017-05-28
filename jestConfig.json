@@ -1,0 +1,12 @@
+{
+  "moduleFileExtensions": [
+    "ts",
+    "js"
+  ],
+  "transform": {
+    ".(ts|tsx)": "ts-jest/preprocessor"
+  },
+  "testRegex": "./src/__tests__/.*Test\\.ts$",
+  "testEnvironment": "node",
+  "mapCoverage": true
+}
