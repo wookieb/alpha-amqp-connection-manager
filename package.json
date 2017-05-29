@@ -1,6 +1,6 @@
 {
   "name": "alpha-amqp-connection-manager",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Connection manager for AMQP",
   "main": "compiled/index.js",
   "types": "compiled/index.d.ts",
