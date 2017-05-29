@@ -1,9 +1,12 @@
 {
   "name": "alpha-amqp-connection-manager",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Connection manager for AMQP",
   "main": "compiled/index.js",
   "types": "compiled/index.d.ts",
+  "files": [
+    "compiled/*"
+  ],
   "repository": {
     "type": "git",
     "url": "git+https://github.com/wookieb/alpha-amqp-connection-manager.git"
