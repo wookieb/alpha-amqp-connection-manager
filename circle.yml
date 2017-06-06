@@ -1,0 +1,10 @@
+machine:
+  node:
+    version: 6.10.3
+
+
+test:
+  override:
+    - npm test -- --reporter mocha-junit-reporter:
+        environment:
+          MOCHA_FILE: $CIRCLE_TEST_REPORTS/junit/test-results.xml
