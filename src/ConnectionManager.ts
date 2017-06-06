@@ -10,20 +10,24 @@ export interface ConnectionManagerOptions {
      * Options provided to amqp.connect
      */
     connection?: any,
-    reconnect?: ReconnectOptions
-}
 
-export interface ReconnectOptions {
     /**
-     * Maximum amount of reconnect attempts - default no limit
+     * Whether to use confirm channel - http://www.squaremobius.net/amqp.node/channel_api.html#confirmchannel
      */
-    failAfter?: number,
-    /**
-     * "backoff" module strategy - if not provided then "exponential" strategy is used
-     *
-     * See https://github.com/MathieuTurcotte/node-backoff#interface-backoffstrategy for details
-     */
-    backoffStrategy?: any
+    useConfirmChannel?: boolean;
+
+    reconnect?: {
+        /**
+         * Maximum amount of reconnect attempts - default no limit
+         */
+        failAfter?: number,
+        /**
+         * "backoff" module strategy - if not provided then "exponential" strategy is used
+         *
+         * See https://github.com/MathieuTurcotte/node-backoff#interface-backoffstrategy for details
+         */
+        backoffStrategy?: any
+    }
 }
 
 export default class ConnectionManager extends EventEmitter {
@@ -31,21 +35,47 @@ export default class ConnectionManager extends EventEmitter {
     public connection: amqp.Connection;
     public channel: amqp.Channel;
 
-    static defaultConnectionOptions: any = {};
-    static defaultReconnectOptions: ReconnectOptions = {
-        backoffStrategy: new backoff.ExponentialStrategy({
-            initialDelay: 1000,
-            maxDelay: 30000,
-            randomisationFactor: Math.random()
-        }),
-        failAfter: 0
+    /**
+     * Default wrapper options deeply merged with user config
+     */
+    static defaultOptions: ConnectionManagerOptions = {
+        useConfirmChannel: false,
+        reconnect: {
+            backoffStrategy: new backoff.ExponentialStrategy({
+                initialDelay: 1000,
+                maxDelay: 30000,
+                randomisationFactor: Math.random()
+            }),
+            failAfter: 0
+        },
+        connection: {}
     };
 
-    constructor(private connectionURL: string, private options?: ConnectionManagerOptions) {
+    private options: ConnectionManagerOptions;
+
+    constructor(private connectionURL: string, options: ConnectionManagerOptions = {}) {
         super();
-        this.options = this.options || {};
+
+        this.options = ConnectionManager.mergeOptionsWithDefaults(options);
 
         this.assertURLCorrectness();
+    }
+
+    /**
+     * Merges options with default ones defined on ConnectionManager
+     *
+     * @param options
+     */
+    static mergeOptionsWithDefaults(options: ConnectionManagerOptions = {}): ConnectionManagerOptions {
+        return Object.assign(
+            {},
+            ConnectionManager.defaultOptions,
+            options,
+            {
+                connection: Object.assign(ConnectionManager.defaultOptions.connection, options.connection),
+                reconnect: Object.assign(ConnectionManager.defaultOptions.reconnect, options.reconnect)
+            }
+        );
     }
 
     private assertURLCorrectness() {
@@ -64,6 +94,11 @@ export default class ConnectionManager extends EventEmitter {
     public async connect(): Promise<void> {
         try {
             await this.connectWithBackoff();
+            this.connection.on('error', (e: Error) => {
+                this.emit('connection-error', e);
+                debug(`Connection error caught: ${e.message}`);
+            });
+
             this.connection.on('close', (err: Error) => {
                 if (err) {
                     debug('Disconnected - reconnect attempt');
@@ -74,7 +109,6 @@ export default class ConnectionManager extends EventEmitter {
                     this.emit('disconnected');
                 }
             })
-
         } catch (e) {
             debug(`Failed to connect: ${e.message}`);
             this.emit('error', e);
@@ -82,7 +116,6 @@ export default class ConnectionManager extends EventEmitter {
     }
 
     private connectWithBackoff(): Promise<amqp.Connection> {
-        const connectionOptions = Object.assign({}, ConnectionManager.defaultConnectionOptions, this.options.connection);
 
         return new Promise((resolve, reject) => {
             const call = backoff.call(async (url: string, options: any, cb: Function) => {
@@ -94,12 +127,12 @@ export default class ConnectionManager extends EventEmitter {
                     debug('Connected');
                     this.emit('connected', this.connection);
 
-                    cb(null, await this.connection.createChannel());
+                    cb(null, this.options.useConfirmChannel ? await this.connection.createConfirmChannel() : await this.connection.createChannel());
                 } catch (e) {
                     debug('Connection failed: ' + e.message);
                     cb(e);
                 }
-            }, this.connectionURL, connectionOptions, (err: Error, channel: amqp.Channel) => {
+            }, this.connectionURL, this.options.connection, (err: Error, channel: amqp.Channel) => {
                 if (err) {
                     reject(err);
                     return;
@@ -109,10 +142,8 @@ export default class ConnectionManager extends EventEmitter {
                 resolve();
             });
 
-            const reconnectOptions = <ReconnectOptions>Object.assign({}, ConnectionManager.defaultReconnectOptions, this.options.reconnect);
-
-            call.failAfter(reconnectOptions.failAfter);
-            call.setStrategy(reconnectOptions.backoffStrategy);
+            call.failAfter(this.options.reconnect.failAfter);
+            call.setStrategy(this.options.reconnect.backoffStrategy);
             call.start();
         });
     }
@@ -126,7 +157,6 @@ export default class ConnectionManager extends EventEmitter {
 
     /**
      * Closes connection.
-     * If you want to wait for all consumers to finish their task then call {@see stopAllConsumers} before disconnecting.
      *
      * @returns {Promise<void>}
      */

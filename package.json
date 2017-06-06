@@ -1,6 +1,6 @@
 {
   "name": "alpha-amqp-connection-manager",
-  "version": "0.1.2",
+  "version": "0.2.0",
   "description": "Connection manager for AMQP",
   "main": "compiled/index.js",
   "types": "compiled/index.d.ts",
@@ -26,9 +26,8 @@
     "node": ">=4.3.0"
   },
   "scripts": {
-    "test": "./node_modules/.bin/jest --config jestConfig.json",
-    "test:coverage": "npm test -- --coverage --no-cache",
-    "test:ci": "npm test -- --testResultsProcessor jest-junit",
+    "test": "mocha -r ts-node/register -r src/__tests__/bootstrap src/__tests__/*Test.ts",
+    "test:coverage": "nyc -e .ts --reporter=html npm test",
     "prepublish": "npm run compile",
     "compile": "npm run compile:all && rm -rf compiled/__tests__",
     "compile:all": "rm -rf compiled && ./node_modules/.bin/tsc"
@@ -42,17 +41,19 @@
     "@types/debug": "0.0.29"
   },
   "devDependencies": {
-    "@types/chai": "^3.5.0",
-    "@types/jest": "^19.2.2",
+    "@types/chai": "^3.5.2",
+    "@types/chai-as-promised": "0.0.31",
+    "@types/faker": "^4.1.0",
+    "@types/mocha": "^2.2.41",
     "@types/node": "^7.0.12",
-    "@types/sinon": "^2.1.2",
+    "@types/sinon": "^2.3.1",
     "chai": "^3.5.0",
     "chai-as-promised": "^6.0.0",
-    "jest": "^20.0.0",
-    "jest-junit": "^1.5.1",
-    "mocha": "^3.1.2",
-    "sinon": "^2.1.0",
-    "ts-jest": "^20.0.4",
-    "typescript": "^2.3.3"
+    "faker": "^4.1.0",
+    "mocha": "^3.4.2",
+    "nyc": "^11.0.2",
+    "sinon": "^2.3.2",
+    "ts-node": "^3.0.6",
+    "typescript": "^2.3.4"
   }
 }

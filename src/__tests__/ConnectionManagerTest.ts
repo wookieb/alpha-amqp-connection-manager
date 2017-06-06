@@ -1,10 +1,12 @@
-import ConnectionManager from "../ConnectionManager";
+import ConnectionManager, {ConnectionManagerOptions} from "../ConnectionManager";
 import * as amqp from 'amqplib';
 import * as sinon from 'sinon';
 import {SinonSpy, SinonStub} from "sinon";
+import {assert} from 'chai';
 
 const Channel = require('amqplib/lib/channel_model').Channel;
 const ChannelModel = require('amqplib/lib/channel_model').ChannelModel;
+const backoff = require('backoff');
 
 describe('ConnectionManager', () => {
 
@@ -41,7 +43,6 @@ describe('ConnectionManager', () => {
     });
 
     describe('Warns about missing "heartbeat" in connection URL', () => {
-
         beforeEach(() => {
             sinon.stub(console, 'warn');
         });
@@ -49,6 +50,7 @@ describe('ConnectionManager', () => {
         afterEach(() => {
             (<SinonStub>console.warn).restore();
         });
+
         it('test', () => {
             new ConnectionManager('amqp://localhost');
 
@@ -60,8 +62,6 @@ describe('ConnectionManager', () => {
     });
     describe('connecting', () => {
         it('success path', async () => {
-            (<SinonStub>amqp.connect).resolves(channelModel);
-            (<SinonStub>channelModel.createChannel).resolves(channel);
 
             await manager.connect();
 
@@ -107,4 +107,65 @@ describe('ConnectionManager', () => {
             sinon.assert.called(channelModel.close);
         });
     });
+
+    it('hard fail on backoff fail', () => {
+        const error = new Error('some error');
+        (<SinonStub>amqp.connect).rejects(error);
+
+        manager = new ConnectionManager(URL, {
+            reconnect: {
+                failAfter: 1,
+                backoffStrategy: new backoff.ExponentialStrategy({
+                    initialDelay: 1
+                })
+            }
+        });
+
+        return assert.isRejected(manager.connect(), error.message);
+    });
+
+    it('emit "connection-error" on internal connection error', async () => {
+        const onConnectionError = sinon.spy();
+
+        (<SinonStub>amqp.connect).resolves(channelModel);
+        (<SinonStub>channelModel.createChannel).resolves(channel);
+
+        manager.on('connection-error', onConnectionError);
+        await manager.connect();
+
+        const error = new Error('some error');
+        manager.connection.emit('error', error);
+        sinon.assert.calledWithMatch(onConnectionError, sinon.match.same(error));
+    });
+
+    it('using confirm channel when asked for it', async () => {
+        (<SinonStub>channelModel.createConfirmChannel).resolves(channel);
+        const manager = new ConnectionManager(URL, {
+            useConfirmChannel: true
+        });
+
+        await manager.connect();
+
+        sinon.assert.notCalled(<SinonStub>channelModel.createChannel);
+    });
+
+    it('merging options', () => {
+        const optionsToMerge: ConnectionManagerOptions = {
+            connection: {some: 'property'},
+            reconnect: {
+                failAfter: 10
+            },
+            useConfirmChannel: true
+        };
+        const options = ConnectionManager.mergeOptionsWithDefaults(optionsToMerge);
+
+        assert.deepEqual(options, {
+            connection: optionsToMerge.connection,
+            reconnect: {
+                backoffStrategy: ConnectionManager.defaultOptions.reconnect.backoffStrategy,
+                failAfter: optionsToMerge.reconnect.failAfter
+            },
+            useConfirmChannel: optionsToMerge.useConfirmChannel
+        });
+    })
 });
