@@ -1,6 +1,6 @@
 {
   "name": "alpha-amqp-connection-manager",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Connection manager for AMQP",
   "main": "compiled/index.js",
   "types": "compiled/index.d.ts",
@@ -26,34 +26,23 @@
     "node": ">=6.0.0"
   },
   "scripts": {
-    "test": "mocha -r ts-node/register -r src/__tests__/bootstrap src/__tests__/*Test.ts",
-    "test:coverage": "nyc -e .ts --reporter=html npm test",
-    "prepublish": "npm run compile",
-    "compile": "npm run compile:all && rm -rf compiled/__tests__",
-    "compile:all": "rm -rf compiled && ./node_modules/.bin/tsc"
+    "test": "pallad-scripts test",
+    "lint": "pallad-scripts lint",
+    "compile": "pallad-scripts compile",
+    "prepack": "npm run compile"
   },
   "homepage": "https://github.com/wookieb/alpha-amqp-consumer#readme",
   "dependencies": {
-    "amqplib": "0.5.*",
-    "backoff": "2.*",
-    "debug": "2.*",
-    "@types/amqplib": "^0.5.1",
-    "@types/debug": "0.0.29"
+    "@types/amqplib": "^0.8",
+    "@types/debug": "^4",
+    "amqplib": "^0.8",
+    "backoff": "^2.*",
+    "debug": "^4"
   },
   "devDependencies": {
-    "@types/chai": "^3.5.2",
-    "@types/chai-as-promised": "0.0.31",
-    "@types/faker": "^4.1.0",
-    "@types/mocha": "^2.2.41",
-    "@types/node": "^7.0.12",
-    "@types/sinon": "^2.3.1",
-    "chai": "^3.5.0",
-    "chai-as-promised": "^6.0.0",
-    "faker": "^4.1.0",
-    "mocha": "^3.4.2",
-    "nyc": "^11.0.2",
-    "sinon": "^2.3.2",
-    "ts-node": "^3.0.6",
-    "typescript": "^2.3.4"
+    "@pallad/scripts": "^2",
+    "@types/backoff": "^2.5.2",
+    "@types/faker": "^5",
+    "sinon": "^9"
   }
 }

@@ -36,8 +36,8 @@ connect('amqp://your.connection:1010/string?heartbeat=10')
 	- `backoffStrategy` - [backoff strategy](https://www.npmjs.com/package/backoff#interface-backoffstrategy) to use. Note that _alpha-amqp-connection-manager_ exports "backoff" module so you don't need to have it defined in your local package.json in order to use it.
 
 ### Debugging 
-The library uses great [debug](https://www.npmjs.com/package/debug) package.
-Call your app with DEBUG env variable set in order to see debug messages.
+The library uses great [debugFn](https://www.npmjs.com/package/debug) package.
+Call your app with DEBUG env variable set in order to see debugFn messages.
 
 ```
 DEBUG=alpha-amqp-connection-manager:*

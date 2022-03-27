@@ -1,5 +1,10 @@
-.idea
 node_modules
-**/.DS_Store
 coverage
-.nyc_output/
+compiled
+*.log
+junit.xml
+.idea
+**/.DS_Store
+.eslintcache
+tsnode-cache
+.task
