@@ -1,6 +1,6 @@
 {
   "name": "alpha-amqp-connection-manager",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Connection manager for AMQP",
   "main": "compiled/index.js",
   "types": "compiled/index.d.ts",
@@ -35,13 +35,13 @@
   "dependencies": {
     "@types/amqplib": "^0.8",
     "@types/debug": "^4",
+    "@types/backoff": "^2.5.2",
     "amqplib": "^0.8",
     "backoff": "^2.*",
     "debug": "^4"
   },
   "devDependencies": {
     "@pallad/scripts": "^2",
-    "@types/backoff": "^2.5.2",
     "@types/faker": "^5",
     "sinon": "^9"
   }
